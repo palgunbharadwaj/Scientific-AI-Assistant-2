@@ -4,11 +4,18 @@ A high-fidelity, multi-agent scientific research platform powered by Gemini and 
 
 ## 🚀 Quick Start (VS Code)
 
-### 1. Prerequisites
+### 1. Clone the Repository
+Open your terminal and run:
+```powershell
+git clone https://github.com/palgunbharadwaj/Scientific-AI-Assistant-2.git
+cd Scientific-AI-Assistant-2
+```
+
+### 2. Prerequisites
 - **Python 3.9+** installed on your system.
 - **VS Code Extensions**: Install the 'Python' extension.
 
-### 2. Environment Setup
+### 3. Environment Setup
 Create a file named `.env` in the root directory and add your API keys:
 ```env
 SECRET_KEY=any-random-string-for-security
@@ -19,7 +26,7 @@ OPENAI_API_KEY="YOUR_OPENAI_KEY"
 ```
 *Note: The Login/Register system will NOT work without the `SECRET_KEY`.*
 
-### 3. Installation
+### 4. Installation
 Open the VS Code terminal and run:
 ```powershell
 # Create virtual environment
@@ -32,7 +39,7 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 4. Running the Project
+### 5. Running the Project
 ```powershell
 uvicorn backend.main:app --reload
 ```
