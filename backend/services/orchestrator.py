@@ -28,46 +28,33 @@ async def orchestrate(
     refined_query, clarification, is_on_topic = refine_query(query)
     session_id = user.username or "anonymous"
 
-    # 2. Autonomous Intent Handling via Gemini
+    # 2. Dynamic Intent Handling
     q_low = refined_query.lower().strip("?.! ")
-    has_scientific_intent = any(kw in q_low for kw in SCIENTIFIC_DOMAIN_KEYWORDS)
     is_greeting = any(g == q_low for g in GREETINGS) or len(q_low.split()) <= 1
-    
-    # Strictly enforce scientific domain unless it's a greeting.
-    # If agent_hint is provided, we trust the user's intent more and let the planner decide.
-    is_actually_on_topic = is_on_topic or (agent_hint is not None and agent_hint != "auto")
 
-    # --- Scenario A: Pure Greeting or Off-Topic ---
-    if is_greeting or not is_actually_on_topic:
-        topic = detect_topic(query)
+    # --- Scenario A: Pure Greeting ---
+    if is_greeting:
         persona = "Scientific AI Assistant"
-        
         if agent_hint == "CRA": persona = "Chemistry Research Agent (CRA)"
         elif agent_hint == "DDRA": persona = "Drug Discovery Agent (DDRA)"
         elif agent_hint == "DPEA": persona = "Prescription Evaluation Agent (DPEA)"
         elif agent_hint == "PDRA": persona = "Pathology & Disease Research Agent (PDRA)"
         
-        if is_greeting:
-            # Simple greeting back
-            prompt = f"GREETING: The user said '{query}'. You are the {persona}. Greet them professionally and ask how you can help with their scientific research today. Do not provide a long introduction."
-        else:
-            # Redirect for off-topic
-            prompt = f"REDIRECT: The user said '{query}'. You are the {persona}. Politely explain that this is a {topic} query and you specialize in scientific research. Redirect them to ask about molecules, drugs, or pathology."
-            
-        response_text = await synthesize_narrative(prompt, {"topic": topic})
+        prompt = f"GREETING: The user said '{query}'. You are the {persona}. Greet them professionally and ask how you can help with their scientific research today. Do not provide a long introduction."
+        response_text = await synthesize_narrative(prompt, {"task": "GREETING"})
         return QueryResponse(
             agent_used=agent_hint or "orchestrator",
             result={
                 "agent": agent_hint or "orchestrator",
-                "status": "greeting" if is_greeting else "redirect",
+                "status": "greeting",
                 "summary": response_text,
-                "is_conversational": is_greeting,
-                "is_out_of_domain": not is_greeting
+                "is_conversational": True,
+                "is_out_of_domain": False
             },
-            message="Greeting or Redirect processed."
+            message="Greeting processed."
         )
 
-    # --- Scenario B: Scientific Research (The Multi-Agent Workflow) ---
+    # --- Scenario B: Dynamic Research Planning (Scientific or Redirect) ---
     
     # 1. Retrieve History Early for Context-Aware Planning
     history = get_chat_history(session_id, limit=6)
@@ -90,25 +77,24 @@ async def orchestrate(
     AGENT_RESTRICTION: {agent_hint if not is_auto else 'None - Orchestrator Mode'}
 
     TASK:
-    1. Identify the core drug/compound discussed in context or query.
-    2. Determine which specialized agents are REQUIRED based on their EXPERTISE:
-       - CRA (Structural Expert): Handles chemical properties, molecular stability, and lab synthesis viability.
-       - DDRA (Discovery Strategist): Handles biological targets, toxicity prediction, and medical treatment design.
-       - DPEA (Clinical Expert): Handles drug safety, dosage verification, and clinical side effects.
-       - PDRA (Pathological Analyst): Handles disease mechanisms, tissue changes, and blood samples/compatibility.
+    1. Determine if the query is SCIENTIFIC (Chemistry, Biology, Drugs, Pathology, Clinical).
+    2. If NOT scientific (e.g., general knowledge, math, news), return "agents": [] and "reasoning": "OFF_TOPIC: [Topic Name]".
+    3. If scientific:
+       - Identify the core drug/compound.
+       - Determine required specialized agents:
+         - CRA (Structural Expert): Chemistry, molecular stability, synthesis.
+         - DDRA (Discovery Strategist): Biological targets, toxicity, medical treatment design.
+         - DPEA (Clinical Expert): Drug safety, dosage, clinical interactions.
+         - PDRA (Pathological Analyst): Disease mechanisms, blood, tissue, cellular impact.
 
     STRICT DOMAIN LOCKING: 
-    - If AGENT_RESTRICTION is 'CRA', you MUST ONLY handle chemistry-level questions. If asked about biology/toxicity, return an empty "agents" list.
-    - If AGENT_RESTRICTION is 'DDRA', you MUST ONLY handle discovery-level questions. If asked about lab synthesis or basic structure, return an empty "agents" list.
-    - If AGENT_RESTRICTION is 'DPEA', you MUST ONLY handle clinical/dosage questions.
-    - If AGENT_RESTRICTION is 'PDRA', you MUST ONLY handle pathology, hematology (blood), or disease-related questions.
-    - If the user's question belongs to a DIFFERENT domain than AGENT_RESTRICTION, explain exactly which specialist (CRA, DDRA, DPEA, or PDRA) should handle it in the "reasoning" field.
+    - If AGENT_RESTRICTION is NOT 'None', and the query belongs to a DIFFERENT domain, return "agents": [] and "reasoning": "REFUSAL: [Detailed Reason]".
 
     JSON OUTPUT ONLY:
     {{
-        "agents": ["CRA", "DDRA", "DPEA", "PDRA"], // List ONLY the restricted agent if it fits.
+        "agents": ["CRA", "DDRA", "DPEA", "PDRA"], // Empty if off-topic or domain mismatch.
         "mode": "sequential" or "parallel",
-        "reasoning": "Specify the correct agent referral here if mismatch."
+        "reasoning": "Explain classification or refusal logic."
     }}
     """
     import json
@@ -121,39 +107,36 @@ async def orchestrate(
 
     needed_agents = plan.get("agents", [])
     
-    # --- Check for Domain Mismatch Refusal ---
-    if not is_auto and agent_hint and agent_hint not in needed_agents:
-        reasoning = plan.get('reasoning', 'Domain mismatch.')
-        
-        # Build High-Fidelity Refusal Narrative (Consice 3-5 lines)
-        expert_areas = ""
-        if agent_hint == "CRA":
-            expert_areas = "* Molecular Stability & Synthetic Pathways\n* Structural Safety & Hazard Prediction\n* Thermodynamics & Bond Energy Analysis"
-            refusal_summary = f"I am the specialized **Chemistry (CRA) Agent**. This query falls outside my structural domain. I invite you to focus on my specialized fields:\n\n{expert_areas}\n\nPlease let me know which chemical structure you would like to analyze."
-        elif agent_hint == "DDRA":
-            # SPECIFIC REFUSAL FOR DDRA (SYNTHESIS MISMATCH) - Already concise
-            refusal_summary = f"I am the specialized **Drug Discovery Agent**. I specialize in biological targets and candidate safety (ADMET). Identifying the correct reaction parameters, catalysts, and side products for **A+B → C** is a **Chemistry (CRA)** task. Please consult the Chemistry Agent to ensure a **safe and stable synthesis** before we analyze its medical efficacy."
-        elif agent_hint == "DPEA":
-            expert_areas = "* Dosage Verification & Drug Compatibility\n* FAERS Safety Signals & Clinical Guidelines\n* Physiological Interactions & Contraindications"
-            refusal_summary = f"I am the specialized **Prescription (DPEA) Agent**. This query exceeds my clinical domain. I invite you to focus on my specialized fields:\n\n{expert_areas}\n\nPlease direct your query toward patient safety or dosage verification."
-        elif agent_hint == "PDRA":
-            expert_areas = "* Disease Mechanisms & Pathophysiology\n* Hematology, Blood Groups & Compatibility\n* Tissue Structural Changes & Diagnostic Sampling"
-            refusal_summary = f"I am the specialized **Pathology (PDRA) Agent**. My focus is exclusively on disease impacts, blood hematology, and tissue changes. I invite you to focus on my specialized areas:\n\n{expert_areas}\n\nPlease let me know which disease state, blood group, or tissue sample you would like to analyze."
+    # --- Check for Off-Topic or Domain Mismatch Refusal ---
+    if not needed_agents:
+        reasoning = plan.get('reasoning', '')
+        persona = "Scientific AI Assistant"
+        if agent_hint == "CRA": persona = "Chemistry Research Agent (CRA)"
+        elif agent_hint == "DDRA": persona = "Drug Discovery Agent (DDRA)"
+        elif agent_hint == "DPEA": persona = "Prescription Evaluation Agent (DPEA)"
+        elif agent_hint == "PDRA": persona = "Pathology & Disease Research Agent (PDRA)"
 
+        if "OFF_TOPIC" in reasoning:
+            topic = reasoning.split("OFF_TOPIC:")[-1].strip()
+            prompt = f"REDIRECT: The user said '{query}'. You are the {persona}. Politely explain that this is a {topic} query and you specialize in scientific research. Redirect them to ask about molecules, drugs, or pathology."
+            status = "redirect"
+        else:
+            # Domain Refusal
+            prompt = f"REFUSE: The user said '{query}'. You are the {persona}. {reasoning}. Explain that you cannot handle this specific domain and invite them to ask about your specialized scientific fields."
+            status = "refusal"
+
+        response_text = await synthesize_narrative(prompt, {"task": "REJECTION"})
         return QueryResponse(
-            agent_used=agent_hint,
+            agent_used=agent_hint or "orchestrator",
             result={
-                "agent": agent_hint,
-                "status": "refusal",
-                "summary": refusal_summary,
-                "reasoning": reasoning
+                "agent": agent_hint or "orchestrator",
+                "status": status,
+                "summary": response_text,
+                "reasoning": reasoning,
+                "is_out_of_domain": True
             },
-            message="Domain Restriction Active."
+            message="Dynamic domain restriction active."
         )
-
-    # Fallback for Orchestrator if planner is empty
-    if is_auto and not needed_agents:
-        needed_agents = ["CRA", "DDRA", "DPEA", "PDRA"]
 
     mode = plan.get("mode", "parallel")
     cra_res, ddra_res, dpea_res, pdra_res = {}, {}, {}, {}

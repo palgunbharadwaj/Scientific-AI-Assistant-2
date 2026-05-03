@@ -86,67 +86,41 @@ async def _chatgpt_fallback(full_prompt: str) -> Optional[str]:
 
 async def _huggingface_fallback(full_prompt: str) -> Optional[str]:
     """
-    Final emergency fallback using Hugging Face Inference API (Meta-Llama).
-    Completely free and separate from Google/OpenAI quotas.
+    Emergency Fallback via Hugging Face Hub (2026 Optimized).
+    Uses the official InferenceClient to handle conversational task models.
     """
     if not HUGGINGFACE_API_KEY:
         print("[HFFallback] No Hugging Face API key configured.")
         return None
-    
-    API_URL = "https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct"
-    headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
-    
-    try:
-        # COMPRESS PROMPT: Free Hugging Face API has strict input limits.
-        # We strip the persona/formatting fluff for the emergency fallback to ensure it fits.
-        short_prompt = f"Scientific Task: {full_prompt[:1500]}... [Truncated for stability]" if len(full_prompt) > 2000 else full_prompt
-        
-        payload = {
-            "inputs": f"<s>[INST] {short_prompt} [/INST]",
-            "parameters": {"max_new_tokens": 400, "temperature": 0.4}
-        }
-        
-        STABLE_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
-        
-        import asyncio
-        loop = asyncio.get_event_loop()
-        
-        for attempt in range(2):
-            print(f"[HFFallback] Attempting synthesis via Mistral-7B (Attempt {attempt+1}/2)...")
-            response = await loop.run_in_executor(None, lambda: requests.post(STABLE_API_URL, headers=headers, json=payload, timeout=25))
-            
-            print(f"[HFFallback] API Response Code: {response.status_code}")
-            
-            if not response.text:
-                print(f"[HFFallback] No text in response.")
-                continue
 
+    try:
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(api_key=HUGGINGFACE_API_KEY)
+        
+        # 2026 Ecosystem: Free-tier models use the 'chat_completion' endpoint
+        models = ["mistralai/Mistral-7B-Instruct-v0.3", "meta-llama/Llama-3.1-8B-Instruct"]
+        messages = [{"role": "user", "content": full_prompt[:2000]}]
+
+        for model in models:
             try:
-                result = response.json()
-            except Exception:
-                print(f"[HFFallback] Data Parse Error. Raw: {response.text[:150]}")
-                break
-            
-            if response.status_code == 200:
-                if isinstance(result, list) and len(result) > 0:
-                    text = result[0].get("generated_text", "")
-                    if "[/INST]" in text: text = text.split("[/INST]")[-1]
-                    print("[HFFallback] DISCOVERY SUCCESSFUL.")
-                    return text.strip()
-            
-            if response.status_code == 503:
-                wait_time = result.get("estimated_time", 10)
-                print(f"[HFFallback] Model is 'Waking Up'. Waiting {wait_time}s...")
-                await asyncio.sleep(min(wait_time, 15))
-            else:
-                print(f"[HFFallback] API Rejected Request: {result}")
-                break
+                print(f"[HFFallback] Attempting synthesis via {model} (InferenceClient)...")
+                response = client.chat_completion(
+                    messages=messages,
+                    model=model,
+                    max_tokens=500,
+                    temperature=0.4
+                )
+                if response and response.choices:
+                    return response.choices[0].message.content
+            except Exception as e:
+                print(f"[HFFallback] Model {model} failed: {str(e)[:100]}")
+                continue
+                
+        return "System Warning: All Hugging Face fallback models failed."
 
     except Exception as e:
-        print(f"[HFFallback] Critical Error: {e}")
-    return None
-
-
+        print(f"[HFFallback] Critical Failure: {str(e)}")
+        return "System Warning: Hugging Face fallback engine offline."
 async def synthesize_narrative(query: str, raw_data: Dict, history: Optional[List[Dict]] = None) -> str:
     """
     Calls Gemini for synthesis with a robust model waterfall and Strict Response Methodology.
@@ -193,9 +167,15 @@ async def synthesize_narrative(query: str, raw_data: Dict, history: Optional[Lis
         "parts": [{"text": full_prompt}]
     }]
 
-    # --- GEMINI WATERFALL ---
+    # --- GEMINI WATERFALL (Updated for 2026 Ecosystem) ---
     if gemini_client:
-        models_to_try = ["gemini-2.0-flash-lite", "gemini-2.0-flash", "gemini-2.5-flash"]
+        models_to_try = [
+            "gemini-2.5-flash", 
+            "gemini-2.0-flash", 
+            "gemini-2.0-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-1.5-flash-latest"
+        ]
         for model_name in models_to_try:
             try:
                 response = gemini_client.models.generate_content(model=model_name, contents=contents)

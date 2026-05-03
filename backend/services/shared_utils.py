@@ -14,13 +14,7 @@ SCIENTIFIC_DOMAIN_KEYWORDS = [
     "synthesis", "discovery", "admet", "structure", "smiles", "pubchem", "chembl",
     "health", "disease", "treatment", "virus", "bacteria", "cell", "dna", "rna",
     "chemistry", "biological", "pharma", "dose", "tablet", "molecular", "bio",
-    "scientific", "analysis", "assessment", "aspirin", "insulin", "antibiotic",
-    "metabolism", "reaction", "interaction", "side effect", "properties",
-    "research", "analyze", "describe", "study", "details", "paracetamol", "ibuprofen",
-    "safe", "safety", "harmful", "toxic", "dosage", "pathology", "blood", "group",
-    "sample", "biopsy", "cell", "tissue", "histology", "biomarker", "test", "diagnostic",
-    "patient", "combination", "hemodynamic", "consequence", "contraindication", "chest", "pain",
-    "erectile", "dysfunction", "sildenafil", "nitroglycerin", "viagra", "heart", "pressure", "cardiac"
+    "scientific", "analysis", "assessment", "research", "pathology", "blood", "tissue"
 ]
 
 GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "how are you", "what's up"]
