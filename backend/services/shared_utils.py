@@ -17,7 +17,10 @@ SCIENTIFIC_DOMAIN_KEYWORDS = [
     "scientific", "analysis", "assessment", "aspirin", "insulin", "antibiotic",
     "metabolism", "reaction", "interaction", "side effect", "properties",
     "research", "analyze", "describe", "study", "details", "paracetamol", "ibuprofen",
-    "safe", "safety", "harmful", "toxic", "dosage"
+    "safe", "safety", "harmful", "toxic", "dosage", "pathology", "blood", "group",
+    "sample", "biopsy", "cell", "tissue", "histology", "biomarker", "test", "diagnostic",
+    "patient", "combination", "hemodynamic", "consequence", "contraindication", "chest", "pain",
+    "erectile", "dysfunction", "sildenafil", "nitroglycerin", "viagra", "heart", "pressure", "cardiac"
 ]
 
 GREETINGS = ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "how are you", "what's up"]

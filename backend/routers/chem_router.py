@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from typing import Optional
 from backend.services.pubchem_api import get_compound_by_name
+from backend.services.gemini_service import normalize_molecule_name
 import aiohttp
 
 router = APIRouter(prefix="/chem", tags=["Chemistry"])
@@ -8,7 +8,15 @@ router = APIRouter(prefix="/chem", tags=["Chemistry"])
 @router.get("/search/{name}")
 async def search_molecule(name: str):
     """Search for a molecule by name and return basic data including SMILES."""
+    # Attempt 1: Direct Lookup
     data = await get_compound_by_name(name)
+    
+    # Attempt 2: Smart Healing (Fallback for typos like "gluucose")
+    if "error" in data:
+        healed_name = await normalize_molecule_name(name)
+        if healed_name.lower() != name.lower():
+            data = await get_compound_by_name(healed_name)
+    
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
     return data

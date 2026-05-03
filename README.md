@@ -1,67 +1,50 @@
-# 🔬 Agentic Scientific Assistant (Expert Research Platform)
+# Scientific AI Assistant (CRA, DDRA, DPEA, PDRA)
 
-An autonomous, multi-agent AI system designed for **Chemistry Research (CRA)**, **Drug Discovery (DDRA)**, and **Prescription Evaluation (DPEA)**. This platform leverages a **5-Layer Agentic RAG** architecture and an ensemble of specialized medical and chemical models.
+A high-fidelity, multi-agent scientific research platform powered by Gemini and a 6-model ensemble. This assistant specializes in Chemistry, Drug Discovery, Prescription Evaluation, and Pathology.
 
----
+## 🚀 Quick Start (VS Code)
 
-## 🚀 Key Features
-- **8-Module Expert Pipeline**: Each agent uses deep reasoning (Chain-of-Thought) for analytical synthesis.
-- **Multi-Model Ensemble**: Integrated with `ChemLLM-7B`, `BioGPT-Large`, `ClinicalBERT`, and `BioBERT`.
-- **Hybrid Data Retrieval**: Parallel API lookups (PubChem, ChEMBL, FDA) combined with LLM-driven deep analysis.
-- **Strict Domain Locking**: Ensures scientists and doctors receive specialized, non-hallucinated data.
+### 1. Prerequisites
+- **Python 3.9+** installed on your system.
+- **VS Code Extensions**: Install the 'Python' extension.
 
----
-
-## 🛠️ Architecture: 5-Layer Agentic RAG
-1. **Planning**: Orchestrator intent detection and query refinement.
-2. **Retrieval**: Parallel multi-source API harvesting.
-3. **Verification**: Domain-specific medical/chemical auditing.
-4. **Reasoning**: Expert Chain-of-Thought via pre-trained models (Module 8).
-5. **Synthesis**: Narrative generation with 100% data grounding.
-
----
-
-## 💻 Installation & Setup
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/palgunbharadwaj/Scientific-AI-Assistant.git
-cd Scientific-AI-Assistant
+### 2. Environment Setup
+Create a file named `.env` in the root directory and add your API keys:
+```env
+SECRET_KEY=any-random-string-for-security
+DATABASE_URL=sqlite:///./scientific_assistant.db
+GOOGLE_API_KEY="YOUR_GEMINI_KEY"
+HUGGINGFACE_API_KEY="YOUR_HF_KEY"
+OPENAI_API_KEY="YOUR_OPENAI_KEY"
 ```
+*Note: The Login/Register system will NOT work without the `SECRET_KEY`.*
 
-### 2. Set Up Virtual Environment
-```bash
+### 3. Installation
+Open the VS Code terminal and run:
+```powershell
+# Create virtual environment
 python -m venv venv
-# Windows:
-react\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-```
 
-### 3. Install Dependencies
-```bash
+# Activate it (Windows)
+.\venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 4. Configuration
-1. Copy the template: `cp .env.example .env`
-2. Open `.env` and paste your **Google Generative AI** and **Hugging Face** API keys.
-
----
-
-## 🏃 How to Run
-Start the FastAPI backend server:
-```bash
+### 4. Running the Project
+```powershell
 uvicorn backend.main:app --reload
 ```
-The platform will be available at: **`http://127.0.0.1:8000`**
+Once running, open your browser to `http://127.0.0.1:8000/app/`.
 
----
+## 🛠 Features
+- **Discovery Engine**: Dynamic 3D molecular visualization (Ball and Stick model).
+- **Periodic Table**: Real-time AI insights for every element.
+- **Multi-Agent Orchestrator**: Automatically routes queries to specialized scientists.
+- **Pathology Research**: Advanced hematology and diagnostic analysis.
 
-## 📄 User Roles
-- **Doctor**: Clinical risk assessment, drug interactions, and prescription decisions.
-- **Researcher**: Molecular synthesis, retrosynthesis mapping, and ADMET scoring.
-- **Admin**: Audit trail review and high-risk query approvals.
-
----
-**Disclaimer**: This is a research assistant tool. All clinical decisions should be verified by a licensed professional.
+## 📂 Project Structure
+- `/backend`: FastAPI routers and logic.
+- `/frontend`: HTML/JS/CSS (Three.js for 3D).
+- `scientific_assistant.db`: Automatically generated SQLite database.

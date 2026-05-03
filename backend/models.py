@@ -33,7 +33,7 @@ class TokenData(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, description="The scientific query from the user")
-    agent: Optional[Literal["CRA", "DDRA", "DPEA", "auto"]] = "auto"
+    agent: Optional[Literal["CRA", "DDRA", "DPEA", "PDRA", "auto"]] = "auto"
 
 
 class QueryResponse(BaseModel):
@@ -58,3 +58,9 @@ class ApprovalDecision(BaseModel):
     approval_id: str
     approved: bool
     admin_note: Optional[str] = None
+
+
+class ElementInsightRequest(BaseModel):
+    atomic_number: int
+    element_name: str
+

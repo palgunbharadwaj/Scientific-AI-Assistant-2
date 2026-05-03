@@ -16,6 +16,7 @@ PUBCHEM_BASE_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 CHEMBL_BASE_URL = "https://www.ebi.ac.uk/chembl/api/data"
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Vector DB
 CHROMA_PERSIST_DIR = "./chroma_store"

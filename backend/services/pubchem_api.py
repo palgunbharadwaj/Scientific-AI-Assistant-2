@@ -20,10 +20,16 @@ async def get_compound_by_name(name: str) -> dict:
                 compound = data["PC_Compounds"][0]
                 cid = compound["id"]["id"]["cid"]
                 props = {p["urn"]["label"]: p.get("value", {}) for p in compound.get("props", [])}
+                
+                # Extract official display name (IUPAC or Preferred)
+                official_name = props.get("IUPAC Name", {}).get("sval") or \
+                                props.get("Preferred Name", {}).get("sval") or \
+                                name.capitalize()
+
                 return {
                     "source": "PubChem",
                     "cid": cid,
-                    "name": name,
+                    "name": official_name,
                     "molecular_formula": props.get("Molecular Formula", {}).get("sval", "N/A"),
                     "molecular_weight": props.get("Molecular Weight", {}).get("fval", "N/A"),
                     "iupac_name": props.get("IUPAC Name", {}).get("sval", "N/A"),

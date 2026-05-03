@@ -16,6 +16,7 @@ from backend.services.chemistry_modules import (
     evidence_aggregator
 )
 from backend.services.chem_llm_service import call_chem_llm
+from backend.services.reaction_engine_service import call_reaction_engine
 
 async def run(query: str, context: Optional[dict] = None) -> dict:
     """
@@ -61,6 +62,13 @@ async def run(query: str, context: Optional[dict] = None) -> dict:
         context=str(pipeline_state.get("normalization", "")) + str(pipeline_state.get("safety_obj", ""))
     )
     pipeline_state["deep_reasoning"] = deep_reasoning
+
+    # Module 9: Reaction Outcome Engine (MoLFormer + ChemLLM)
+    reaction_outcomes = await call_reaction_engine(
+        query=refined_query,
+        compound_name=compound_name
+    )
+    pipeline_state["reaction_outcomes"] = reaction_outcomes
 
     return {
         "agent": "CRA",

@@ -35,3 +35,30 @@ async def submit_query(
             result={"summary": f"A system error occurred during synthesis: {str(e)}", "status": "error"},
             message="Internal Server Error"
         )
+
+
+@router.post("/element-insight")
+async def get_element_insight(request: QueryRequest):
+    """
+    Dedicated endpoint for the periodic table side panel.
+    Returns a dynamic AI insight for a specific element.
+    """
+    from backend.services.gemini_service import get_element_research_insight
+    import re
+    
+    # Extract name and number from query string if needed, 
+    # but the frontend will send it in a specific format for this route.
+    # Pattern expected: "Analyze element [NAME] with atomic number [NUM]"
+    try:
+        match = re.search(r"Analyze element (\w+) with atomic number (\d+)", request.query)
+        if match:
+            name = match.group(1)
+            at_num = int(match.group(2))
+        else:
+            return {"insight": "Scientific context resolution failed."}
+
+        insight = await get_element_research_insight(at_num, name)
+        return {"insight": insight}
+    except Exception:
+        return {"insight": "Research synthesis unavailable."}
+

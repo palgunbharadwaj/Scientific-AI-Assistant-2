@@ -12,6 +12,7 @@ from backend.services.discovery_modules import (
     sustainability_toxicity_filters,
     candidate_evaluation_module
 )
+from backend.services.discovery_llm_service import call_discovery_ensemble
 
 async def run(query: str, context: Optional[dict] = None) -> dict:
     """
@@ -48,6 +49,13 @@ async def run(query: str, context: Optional[dict] = None) -> dict:
     
     # Final Evaluation
     pipeline_state["candidate_summary"] = candidate_evaluation_module(pipeline_state)
+    
+    # Module 8: Discovery Deep Reasoning (Pre-trained Model Integration)
+    discovery_deep_reasoning = await call_discovery_ensemble(
+        query=refined_query,
+        context=str(pipeline_state.get("generator_text", "")) + f" | SMILES: {smiles}"
+    )
+    pipeline_state["discovery_deep_reasoning"] = discovery_deep_reasoning
 
     return {
         "agent": "DDRA",
